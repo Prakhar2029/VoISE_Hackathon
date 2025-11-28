@@ -12,16 +12,17 @@ The Sentinel is an AI-powered kiosk designed for Emergency Room triage. It prior
 ### 1. Multimodal Analysis
 - **The Eyes**: Uses `DeepFace` to detect facial micro-expressions (Fear, Pain, Sadness).
 - **The Ears**: Uses `SpeechRecognition` to transcribe patient complaints.
-- **The Brain**: Analyzes keywords against a weighted medical dictionary to calculate urgency.
+- **The Brain**: Uses **Semantic AI** (`sentence-transformers`) to understand context, not just keywords (e.g., "My chest feels heavy" = "Heart Attack").
 
 ### 2. Flexible Input Modes
-- **Live Mode**: Real-time scanning using Webcam and Microphone.
+- **Live Mode**: Real-time **Video Scanning** (5s clip) for accurate emotion detection.
 - **Upload Mode**: Support for pre-recorded Video (`.mp4`, `.mov`) and Audio (`.wav`, `.mp3`, `.m4a`) files.
-- **Smart Video Scan**: Automatically scans uploaded videos to find the frame with the highest emotional intensity.
+- **Smart Video Scan**: Automatically scans videos to find the frame with the highest emotional intensity.
 
 ### 3. Intelligent Feedback
+- **Medical Dashboard**: High-contrast Dark Mode UI with glassmorphism cards for ER visibility.
 - **Text-to-Speech Diagnosis**: The system announces the triage priority verbally.
-- **Transparency**: View the "Critical Symptom Keywords" used by the AI.
+- **Transparency**: View the "Critical Symptom Keywords" and semantic matches used by the AI.
 - **Confidence Charts**: Visual bar charts showing the probability of detected emotions.
 
 ## Project Structure

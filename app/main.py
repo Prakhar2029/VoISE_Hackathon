@@ -18,6 +18,7 @@ from app.components.dashboard import render_header, render_metrics, render_patie
 
 from app.audio.converter import convert_to_wav
 from app.audio.speaker import Speaker
+from app.database import init_db, add_patient, get_patients, clear_patients
 
 # Initialize modules
 if 'detector' not in st.session_state:
@@ -33,12 +34,16 @@ if 'scorer' not in st.session_state:
 if 'speaker' not in st.session_state:
     st.session_state.speaker = Speaker()
 
-# Initialize patient list
+# Initialize patient list (Load from DB)
 if 'patients' not in st.session_state:
-    st.session_state.patients = []
+    st.session_state.patients = get_patients()
 
 def main():
+    init_db()
     render_header()
+    
+    # Refresh patients from DB
+    st.session_state.patients = get_patients()
     
     # Sidebar for inputs
     with st.sidebar:
@@ -96,26 +101,31 @@ def run_live_scan(name):
     
     # 1. Vision Scan
     with col1:
-        st.info("Analyzing Facial Expressions...")
+        st.info("Recording Video (5s) for Smart Scan...")
         cam = Camera()
-        frame = cam.get_frame()
+        temp_live_path = "temp_live_video.mp4"
+        success = cam.record_video(temp_live_path, duration=5)
         cam.release()
         
-        if frame is not None:
-            # Convert to RGB for display
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            st.image(frame_rgb, caption="Patient Snapshot", width=300)
+        if success:
+            # Use smart video processing
+            visual_score, emotion, best_frame, emotion_dict = st.session_state.detector.process_video(temp_live_path)
             
-            # Analyze
-            # Analyze
-            visual_score, emotion, emotion_dict = st.session_state.detector.analyze_frame(frame)
-            st.success(f"Detected Emotion: {emotion.upper()}")
-            
-            # Show emotion probability
-            if emotion_dict:
-                st.bar_chart(emotion_dict)
+            if best_frame is not None:
+                # Convert to RGB for display
+                frame_rgb = cv2.cvtColor(best_frame, cv2.COLOR_BGR2RGB)
+                st.image(frame_rgb, caption=f"Best Frame (Emotion: {emotion})", width=300)
+                st.success(f"Detected Emotion: {emotion.upper()}")
+                
+                # Show emotion probability
+                if emotion_dict:
+                    st.bar_chart(emotion_dict)
+            else:
+                st.error("Could not analyze video.")
+                visual_score = 0
+                emotion = "N/A"
         else:
-            st.error("Camera failed.")
+            st.error("Camera failed to record.")
             visual_score = 0
             emotion = "N/A"
 
@@ -219,7 +229,7 @@ def run_file_scan(name, uploaded_video, uploaded_audio):
 
 def cleanup_temp_files():
     """Removes temporary files created during upload."""
-    temp_files = ["temp_video.mp4", "temp_audio.wav"]
+    temp_files = ["temp_video.mp4", "temp_audio.wav", "temp_live_video.mp4"]
     for file in temp_files:
         if os.path.exists(file):
             try:
@@ -262,7 +272,8 @@ def finalize_scan(name, visual_score, symptom_score, emotion, text):
         "Time": time.strftime("%H:%M:%S")
     }
     
-    st.session_state.patients.append(new_patient)
+    add_patient(new_patient)
+    st.session_state.patients = get_patients()
     st.success("Patient added to triage list.")
     time.sleep(3)
     st.rerun()

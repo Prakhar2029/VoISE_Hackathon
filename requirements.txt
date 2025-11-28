@@ -7,3 +7,4 @@ pyaudio
 tf-keras
 moviepy
 pyttsx3
+sentence-transformers

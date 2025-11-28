@@ -1,5 +1,16 @@
+from sentence_transformers import SentenceTransformer, util
+import torch
+
 class SymptomAnalyzer:
     def __init__(self):
+        # Load the semantic model (lightweight)
+        try:
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            self.semantic_enabled = True
+        except Exception as e:
+            print(f"Warning: Could not load Semantic Model: {e}")
+            self.semantic_enabled = False
+
         # Dictionary of "Kill Words" with weights
         self.symptom_weights = {
             # CRITICAL (10) - Life Threatening
@@ -39,25 +50,57 @@ class SymptomAnalyzer:
             "worry": 2, "anxious": 2, "anxiety": 2, "nervous": 1,
             "scrape": 1, "minor": 1
         }
+        
+        # Pre-compute embeddings for keys if model is loaded
+        if self.semantic_enabled:
+            self.keys = list(self.symptom_weights.keys())
+            self.key_embeddings = self.model.encode(self.keys, convert_to_tensor=True)
 
     def calculate_symptom_score(self, text):
         """
         Calculates a symptom score based on keywords found in the text.
+        Uses both exact matching and semantic similarity.
         """
         if not text:
             return 0, []
 
-        text = text.lower()
+        text_lower = text.lower()
         score = 0
         words_found = []
+        matched_keys = set()
 
+        # 1. Exact Match (Fast)
         for word, weight in self.symptom_weights.items():
-            if word in text:
+            if word in text_lower:
                 score += weight
                 words_found.append(word)
+                matched_keys.add(word)
+
+        # 2. Semantic Match (Smart)
+        if self.semantic_enabled:
+            # Encode the patient text
+            # We split by sentence or just encode the whole thing? 
+            # Encoding the whole thing might dilute specific symptoms.
+            # Let's try encoding the whole text for now, but comparing against single words might be weak.
+            # Better: Encode the text and compare against keys.
+            
+            text_embedding = self.model.encode(text, convert_to_tensor=True)
+            
+            # Compute cosine similarities
+            cosine_scores = util.cos_sim(text_embedding, self.key_embeddings)[0]
+            
+            # Find matches above threshold
+            # Increased threshold to 0.7 to prevent "dizzy" (5) matching "dying" (10)
+            threshold = 0.7
+            for i, match_score in enumerate(cosine_scores):
+                if match_score > threshold:
+                    key = self.keys[i]
+                    if key not in matched_keys: # Don't double count
+                        score += self.symptom_weights[key]
+                        words_found.append(f"{key} (Semantic: {match_score:.2f})")
+                        matched_keys.add(key)
         
-        # Cap the score at 10 for normalization purposes, or keep it raw
-        # Let's cap it at 10 for the formula
+        # Cap the score at 10
         final_score = min(score, 10)
         
         return final_score, words_found
