@@ -1,10 +1,10 @@
 streamlit
 deepface
-opencv-python
+opencv-python-headless  
 SpeechRecognition
 pandas
-pyaudio
 tf-keras
 moviepy
-pyttsx3
 sentence-transformers
+gTTS                    
+streamlit-audiorecorder 
