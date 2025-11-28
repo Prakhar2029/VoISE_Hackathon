@@ -14,7 +14,7 @@ from app.audio.recorder import AudioRecorder
 from app.audio.transcriber import Transcriber
 from app.logic.symptoms import SymptomAnalyzer
 from app.logic.scoring import UrgencyScorer
-from app.components.dashboard import render_header, render_metrics, render_patient_list
+from app.components.dashboard import setup_page, render_brand, render_metrics, render_patient_list
 
 from app.audio.converter import convert_to_wav
 from app.audio.speaker import Speaker
@@ -39,8 +39,20 @@ if 'patients' not in st.session_state:
     st.session_state.patients = get_patients()
 
 def main():
+    setup_page()
     init_db()
-    render_header()
+    
+    # Header Layout: Brand on left, Reset Button on right
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        render_brand()
+    with col2:
+        st.write("") # Spacer
+        st.write("")
+        if st.button("Reset System", type="secondary"):
+            clear_patients()
+            st.session_state.patients = []
+            st.rerun()
     
     # Refresh patients from DB
     st.session_state.patients = get_patients()
@@ -72,6 +84,17 @@ def main():
     elif input_source == "Upload Files":
         render_upload_interface(patient_name)
         render_patient_list(st.session_state.patients)
+
+    # Reset System Button (Bottom of Sidebar) - REMOVED
+    # with st.sidebar:
+    #     st.markdown("---")
+    #     # Using columns to center and make it look smaller/less prominent
+    #     c1, c2, c3 = st.columns([1, 2, 1])
+    #     with c2:
+    #         if st.button("Reset System", type="secondary", key="reset_btn"):
+    #             clear_patients()
+    #             st.session_state.patients = []
+    #             st.rerun()
 
 def render_upload_interface(patient_name):
     st.markdown("### 📂 Upload Patient Data")
@@ -131,8 +154,8 @@ def run_live_scan(name):
 
     # 2. Audio Scan
     with col2:
-        st.info("Listening for Symptoms (5s)...")
-        audio_data = st.session_state.recorder.listen(timeout=5, phrase_time_limit=5)
+        st.info("Listening for Symptoms (8s)...")
+        audio_data = st.session_state.recorder.listen(timeout=5, phrase_time_limit=8)
         
         if audio_data:
             text, error = st.session_state.transcriber.transcribe(audio_data)

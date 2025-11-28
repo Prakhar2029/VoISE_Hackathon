@@ -66,17 +66,18 @@ def load_css():
         </style>
     """, unsafe_allow_html=True)
 
-def render_header():
-    st.set_page_config(page_title="The Sentinel", page_icon="🏥", layout="wide")
+def setup_page():
+    st.set_page_config(page_title="Emerge", page_icon="🏥", layout="wide")
     load_css()
-    
+
+def render_brand():
     st.markdown("""
         <div style='text-align: center; padding-bottom: 20px;'>
             <h1 style='color: #ff4b4b;'>
                 <span class='pulse-icon'>🏥</span> Emerge
             </h1>
             <h3 style='color: #a0a0a0; font-style: italic;'>
-                "Patients lie, Biometrics don't."
+                "AI-Powered Patient Prioritization."
             </h3>
         </div>
     """, unsafe_allow_html=True)
