@@ -1,0 +1,9 @@
+streamlit
+deepface
+opencv-python
+SpeechRecognition
+pandas
+pyaudio
+tf-keras
+moviepy
+pyttsx3
